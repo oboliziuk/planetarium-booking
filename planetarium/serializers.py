@@ -30,14 +30,19 @@ class PlanetariumDomeSerializer(serializers.ModelSerializer):
 
 
 class AstronomyShowSerializer(serializers.ModelSerializer):
+    themes = serializers.PrimaryKeyRelatedField(
+        many=True,
+        queryset=ShowTheme.objects.all(),
+    )
+
     class Meta:
         model = AstronomyShow
-        fields = ("id", "title", "description")
+        fields = ("id", "title", "description", "themes")
 
 
 class AstronomyShowListSerializer(serializers.ModelSerializer):
     themes = serializers.SlugRelatedField(
-        many=True, read_only=True, slug_field="name", source="themes"
+        many=True, read_only=True, slug_field="name",
     )
 
     class Meta:
@@ -141,10 +146,11 @@ class ShowSessionDetailSerializer(ShowSessionSerializer):
 
 class ReservationSerializer(serializers.ModelSerializer):
     tickets = TicketSerializer(many=True, read_only=False, allow_empty=False)
+    user = serializers.HiddenField(default=serializers.CurrentUserDefault())
 
     class Meta:
         model = Reservation
-        fields = ("id", "tickets", "created_at")
+        fields = ("id", "created_at", "user", "tickets")
 
     def create(self, validated_data):
         with transaction.atomic():
