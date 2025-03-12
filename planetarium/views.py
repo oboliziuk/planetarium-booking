@@ -1,14 +1,17 @@
 import datetime
 
 from django.db.models import F, Count
-from django.shortcuts import render
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework import viewsets, permissions, mixins, status
-from rest_framework.permissions import IsAuthenticatedOrReadOnly, IsAdminUser, IsAuthenticated
+from rest_framework.permissions import (
+    IsAuthenticatedOrReadOnly,
+    IsAdminUser,
+    IsAuthenticated
+)
 from rest_framework.viewsets import GenericViewSet
 
 from .models import (
@@ -17,7 +20,6 @@ from .models import (
     ShowTheme,
     ShowSession,
     Reservation,
-    Ticket
 )
 from .serializers import (
     PlanetariumDomeSerializer,
@@ -26,8 +28,11 @@ from .serializers import (
     ShowSessionSerializer,
     ReservationSerializer,
     ReservationListSerializer,
-    TicketSerializer, AstronomyShowListSerializer, AstronomyShowDetailSerializer, AstronomyShowImageSerializer,
-    ShowSessionListSerializer, ShowSessionDetailSerializer
+    AstronomyShowListSerializer,
+    AstronomyShowDetailSerializer,
+    AstronomyShowImageSerializer,
+    ShowSessionListSerializer,
+    ShowSessionDetailSerializer
 )
 
 
@@ -113,7 +118,8 @@ class AstronomyShowViewSet(
             OpenApiParameter(
                 "title",
                 type=OpenApiTypes.STR,
-                description="Filter by astronomy_show title (ex. ?title=fiction)",
+                description="Filter by "
+                            "astronomy_show title (ex. ?title=fiction)",
             ),
         ]
     )
@@ -138,7 +144,8 @@ class ShowSessionViewSet(viewsets.ModelViewSet):
         .select_related("astronomy_show", "planetarium_dome")
         .annotate(
             tickets_available=(
-                F("planetarium_dome__rows") * F("planetarium_dome__seats_in_row")
+                F("planetarium_dome__rows") *
+                F("planetarium_dome__seats_in_row")
                 - Count("tickets")
             )
         )
@@ -175,7 +182,8 @@ class ShowSessionViewSet(viewsets.ModelViewSet):
             OpenApiParameter(
                 "astronomy_show",
                 type=OpenApiTypes.INT,
-                description="Filter by astronomy_show id (ex. ?astronomy_show=2)",
+                description="Filter by "
+                            "astronomy_show id (ex. ?astronomy_show=2)",
             ),
             OpenApiParameter(
                 "date",
@@ -201,20 +209,18 @@ class ReservationViewSet(
     mixins.CreateModelMixin,
     GenericViewSet
 ):
+    queryset = Reservation.objects.prefetch_related(
+        "tickets__show_session__astronomy_show",
+        "tickets__show_session__planetarium_dome"
+    )
     serializer_class = ReservationSerializer
     pagination_class = ReservationPagination
     permission_classes = (IsAuthenticated,)
 
-    def get_queryset(self):
-        return Reservation.objects.prefetch_related(
-            "tickets__show_session__astronomy_show",
-            "tickets__show_session__planetarium_dome"
-        ).filter(user=self.request.user)
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
 
     def get_serializer_class(self):
         if self.action == "list":
             return ReservationListSerializer
         return ReservationSerializer
-
-    def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
