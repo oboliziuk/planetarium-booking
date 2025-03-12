@@ -1,5 +1,5 @@
 services:
-  cinema-app:
+  planetarium-app:
     build: .
     ports:
       - "8001:8000"
