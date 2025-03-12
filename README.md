@@ -1,4 +1,4 @@
-# Planetarium
+# planetarium-booking
 
 The "Planetarium" project allows users to view astronomy shows, book tickets for sessions, and access information about sessions and shows. It also provides an API for managing astronomy shows and planetarium sessions.
 
